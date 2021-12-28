@@ -1,14 +1,15 @@
 import json
 import time
-from matplotlib import pyplot as plt
-from matplotlib.ticker import FuncFormatter, MaxNLocator
+# from matplotlib import pyplot as plt
+# from matplotlib.ticker import FuncFormatter, MaxNLocator
 import numpy as np
-import pandas as pd
+# import pandas as pd
 
-from easytello import Tello
+from easytello.tello import Tello
+import tello_sim.drone_plotter as drone_plotter
 
 
-class Simulator():
+class Simulator:
     def __init__(self):
         self.takeoff_alt = 81
         self._init_state()
@@ -19,10 +20,10 @@ class Simulator():
 
     def _init_state(self):
         self.altitude = 0
-        self.cur_loc = (0,0)
+        self.cur_loc = (0, 0)
         self.bearing = 0
         self.altitude_data = []
-        self.path_coors = [(0,0)]
+        self.path_coors = [(0, 0)]
         self.flip_coors = []
         self.fig_count = 1
         self.command_log = []
@@ -74,40 +75,40 @@ class Simulator():
             print("I am flying at {} centimeters above my takeoff altitude.".format(self.altitude))
             pass
 
-    # Plotting functions
-    def plot_altitude_steps(self):
-        fig, ax = plt.subplots()
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.plot(self.altitude_data,'ro', linestyle='dashed', linewidth=2, markersize=12)
-        ax.plot(self.altitude_data, linewidth=25, alpha=.15)
-        ax.grid()
-        ax.set(xlabel='Step', ylabel='Altitude in Centimeters',title='Tello Altitude')
-        plt.show()
-
-    def plot_horz_steps(self):
-        title = "Path of Tello from Takeoff Location. \nLast Heading= {} Degrees from Start".format(self.bearing)
-        fig, ax = plt.subplots()
-        horz_df = pd.DataFrame(self.path_coors)
-        xlow = min(horz_df[0])
-        xhi = max(horz_df[0])
-        ylow = min(horz_df[1])
-        yhi = max(horz_df[1])
-        xlowlim = -200 if xlow > -200 else xlow - 40
-        xhilim = 200 if xhi < 200 else xhi + 40
-        ylowlim = -200 if ylow > -200 else ylow - 40
-        yhilim = 200 if yhi < 200 else yhi + 40
-        ax.set_xlim([xlowlim,xhilim])
-        ax.set_ylim([ylowlim,yhilim])
-        ax.plot(horz_df[0], horz_df[1], 'bo', linestyle='dashed', linewidth=2, markersize=12, label="Drone Moves")
-        ax.plot(horz_df[0], horz_df[1], linewidth=25, alpha=.15)
-        if len(self.flip_coors) > 0:
-            flip_df = pd.DataFrame(self.flip_coors)
-            ax.plot(flip_df[0], flip_df[1], 'ro', markersize=12, label="Drone Flips")
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.grid()
-        ax.legend()
-        ax.set(xlabel='X Distance from Takeoff', ylabel='Y Distance from Takeoff',title=title)
-        plt.show()
+    # # drone_plotter functions
+    # def plot_altitude_steps(self):
+    #     fig, ax = plt.subplots()
+    #     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    #     ax.plot(self.altitude_data,'ro', linestyle='dashed', linewidth=2, markersize=12)
+    #     ax.plot(self.altitude_data, linewidth=25, alpha=.15)
+    #     ax.grid()
+    #     ax.set(xlabel='Step', ylabel='Altitude in Centimeters',title='Tello Altitude')
+    #     plt.show()
+    # 
+    # def plot_horz_steps(self):
+    #     title = "Path of Tello from Takeoff Location. \nLast Heading= {} Degrees from Start".format(self.bearing)
+    #     fig, ax = plt.subplots()
+    #     horz_df = pd.DataFrame(self.path_coors)
+    #     xlow = min(horz_df[0])
+    #     xhi = max(horz_df[0])
+    #     ylow = min(horz_df[1])
+    #     yhi = max(horz_df[1])
+    #     xlowlim = -200 if xlow > -200 else xlow - 40
+    #     xhilim = 200 if xhi < 200 else xhi + 40
+    #     ylowlim = -200 if ylow > -200 else ylow - 40
+    #     yhilim = 200 if yhi < 200 else yhi + 40
+    #     ax.set_xlim([xlowlim,xhilim])
+    #     ax.set_ylim([ylowlim,yhilim])
+    #     ax.plot(horz_df[0], horz_df[1], 'bo', linestyle='dashed', linewidth=2, markersize=12, label="Drone Moves")
+    #     ax.plot(horz_df[0], horz_df[1], linewidth=25, alpha=.15)
+    #     if len(self.flip_coors) > 0:
+    #         flip_df = pd.DataFrame(self.flip_coors)
+    #         ax.plot(flip_df[0], flip_df[1], 'ro', markersize=12, label="Drone Flips")
+    #     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    #     ax.grid()
+    #     ax.legend()
+    #     ax.set(xlabel='X Distance from Takeoff', ylabel='Y Distance from Takeoff',title=title)
+    #     plt.show()
 
     # Determine bearing relative to start which is inline with positive y-axis
     @staticmethod
@@ -121,7 +122,7 @@ class Simulator():
         y_n = np.cumsum(dy) + orig[1]
         return x_n[0], y_n[0]
 
-   # Movement Commands
+    # Movement Commands
     def takeoff(self):
         """
         Command drone to takeoff.
@@ -154,8 +155,8 @@ class Simulator():
         self.altitude = 0
         self.send_command('land')
         print("Here are the graphs of your flight! I can't wait to try this for real.")
-        self.plot_horz_steps()
-        self.plot_altitude_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors)
+        drone_plotter.plot_altitude_steps(self.altitude)
 
     def up(self, dist: int):
         """
@@ -176,7 +177,7 @@ class Simulator():
         self.altitude = self.altitude + dist
         self.altitude_data.append(self.altitude)
         self.send_command('up', dist)
-        self.plot_altitude_steps()
+        drone_plotter.plot_altitude_steps(self.altitude_data)
 
     def down(self, dist: int):
         """
@@ -197,7 +198,7 @@ class Simulator():
         self.altitude = self.altitude - dist
         self.altitude_data.append(self.altitude)
         self.send_command('down', dist)
-        self.plot_altitude_steps()
+        drone_plotter.plot_altitude_steps(self.altitude_data)
 
     def left(self, dist: int):
         """
@@ -215,12 +216,12 @@ class Simulator():
         self.check_altitude()
         self.check_int_param(dist)
         print("My current bearing is {} degrees.".format(self.bearing))
-        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing-90, dist=dist)
+        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing - 90, dist=dist)
         self.cur_loc = new_loc
         self.path_coors.append(new_loc)
         print(self.path_coors)
         self.send_command('left', dist)
-        self.plot_horz_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors)
 
     def right(self, dist: int):
         """
@@ -238,11 +239,11 @@ class Simulator():
         self.check_altitude()
         self.check_int_param(dist)
         print("My current bearing is {} degrees.".format(self.bearing))
-        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing+90, dist=dist)
+        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing + 90, dist=dist)
         self.cur_loc = new_loc
         self.path_coors.append(new_loc)
         self.send_command('right', dist)
-        self.plot_horz_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors)
 
     def forward(self, dist: int):
         """
@@ -264,7 +265,7 @@ class Simulator():
         self.cur_loc = new_loc
         self.path_coors.append(new_loc)
         self.send_command('forward', dist)
-        self.plot_horz_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors)
 
     def back(self, dist: int):
         """
@@ -281,11 +282,11 @@ class Simulator():
         """
         self.check_altitude()
         self.check_int_param(dist)
-        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing+180, dist=dist)
+        new_loc = self.dist_bearing(orig=self.cur_loc, bearing=self.bearing + 180, dist=dist)
         self.cur_loc = new_loc
         self.path_coors.append(new_loc)
         self.send_command('back', dist)
-        self.plot_horz_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors)
 
     def cw(self, degr: int):
         """
@@ -348,7 +349,7 @@ class Simulator():
         self.check_flip_param(direc)
         self.send_command('flip', direc)
         self.flip_coors.append(self.cur_loc)
-        self.plot_horz_steps()
+        drone_plotter.plot_horz_steps(self.bearing, self.path_coors, self.flip_coors)
 
     # Deploys the command log from the simulation state to the actual drone
     def deploy(self):
@@ -363,7 +364,7 @@ class Simulator():
         """
         print('Deploying your commands to a real Tello drone!')
 
-        if (self.driver_instance is None):
+        if self.driver_instance is None:
             # Since the driver binds to a socket on instantiation, we can only
             # keep a single driver instance open per session
             self.driver_instance = Tello()
@@ -402,7 +403,7 @@ class Simulator():
         with open(file_path, 'w') as json_file:
             json.dump(self.command_log, json_file, indent=4)
 
-    def load_commands(self, file_path:str):
+    def load_commands(self, file_path: str):
         """
         Load commands from a local file to the current sim object.
         See documentation for the required file format.
